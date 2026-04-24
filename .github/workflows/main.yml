@@ -19,36 +19,22 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Write OCI config and env
+      - name: Write config files
         run: |
-          echo "${{ secrets.OCI_API_KEY }}" > oci_key.pem
-          chmod 600 oci_key.pem
+          echo "${{ secrets.OCI_API_KEY }}" > oci_api_private_key.pem
+          chmod 600 oci_api_private_key.pem
 
-          cat > oci_config << EOF
-          [DEFAULT]
-          user=${{ secrets.OCI_USER_OCID }}
-          tenancy=${{ secrets.OCI_TENANCY_OCID }}
-          region=${{ secrets.OCI_REGION }}
-          fingerprint=${{ secrets.OCI_FINGERPRINT }}
-          key_file=./oci_key.pem
-          EOF
+          printf '[DEFAULT]\nuser=%s\nfingerprint=%s\ntenancy=%s\nregion=%s\nkey_file=./oci_api_private_key.pem\n' \
+            "${{ secrets.OCI_USER_OCID }}" \
+            "${{ secrets.OCI_FINGERPRINT }}" \
+            "${{ secrets.OCI_TENANCY_OCID }}" \
+            "${{ secrets.OCI_REGION }}" > oci_config
 
-          cat > oci.env << EOF
-          OCI_CONFIG=./oci_config
-          OCT_FREE_AD=${{ secrets.OCI_AVAILABILITY_DOMAIN }}
-          DISPLAY_NAME=my-arm-ubuntu-instance
-          OCI_COMPUTE_SHAPE=${{ secrets.OCI_COMPUTE_SHAPE }}
-          SECOND_MICRO_INSTANCE=False
-          REQUEST_WAIT_TIME_SECS=60
-          SSH_AUTHORIZED_KEYS_FILE=./id_rsa.pub
-          OCI_SUBNET_ID=${{ secrets.OCI_SUBNET_ID }}
-          OCI_IMAGE_ID=${{ secrets.OCI_IMAGE_ID }}
-          OPERATING_SYSTEM=Canonical Ubuntu
-          OS_VERSION=22.04
-          ASSIGN_PUBLIC_IP=false
-          BOOT_VOLUME_SIZE=50
-          NOTIFY_EMAIL=False
-          EOF
+          printf 'OCI_CONFIG=./oci_config\nOCT_FREE_AD=%s\nDISPLAY_NAME=my-arm-ubuntu-instance\nOCI_COMPUTE_SHAPE=%s\nSECOND_MICRO_INSTANCE=False\nREQUEST_WAIT_TIME_SECS=60\nSSH_AUTHORIZED_KEYS_FILE=./id_rsa.pub\nOCI_SUBNET_ID=%s\nOCI_IMAGE_ID=%s\nOPERATING_SYSTEM=Canonical Ubuntu\nOS_VERSION=22.04\nASSIGN_PUBLIC_IP=false\nBOOT_VOLUME_SIZE=50\nNOTIFY_EMAIL=False\n' \
+            "${{ secrets.OCI_AVAILABILITY_DOMAIN }}" \
+            "${{ secrets.OCI_COMPUTE_SHAPE }}" \
+            "${{ secrets.OCI_SUBNET_ID }}" \
+            "${{ secrets.OCI_IMAGE_ID }}" > oci.env
 
       - name: Run script
         run: python main.py
