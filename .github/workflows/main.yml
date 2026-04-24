@@ -19,15 +19,27 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Write OCI config file
+        run: |
+          mkdir -p ~/.oci
+          echo "[DEFAULT]" > oci_config
+          echo "user=${{ secrets.OCI_USER_OCID }}" >> oci_config
+          echo "tenancy=${{ secrets.OCI_TENANCY_OCID }}" >> oci_config
+          echo "region=${{ secrets.OCI_REGION }}" >> oci_config
+          echo "fingerprint=${{ secrets.OCI_FINGERPRINT }}" >> oci_config
+          echo "key_file=./oci_key.pem" >> oci_config
+          echo "${{ secrets.OCI_API_KEY }}" > oci_key.pem
+          chmod 600 oci_key.pem
+
+      - name: Write env file
+        run: |
+          cp oci.env .env
+          sed -i "s|OCI_CONFIG=.*|OCI_CONFIG=./oci_config|" .env
+          echo "OCI_SUBNET_ID=${{ secrets.OCI_SUBNET_ID }}" >> .env
+          echo "OCI_IMAGE_ID=${{ secrets.OCI_IMAGE_ID }}" >> .env
+          echo "OCI_COMPUTE_SHAPE=${{ secrets.OCI_COMPUTE_SHAPE }}" >> .env
+          echo "OCT_FREE_AD=${{ secrets.OCI_AVAILABILITY_DOMAIN }}" >> .env
+
       - name: Run script
-        env:
-          OCI_USER_OCID: ${{ secrets.OCI_USER_OCID }}
-          OCI_TENANCY_OCID: ${{ secrets.OCI_TENANCY_OCID }}
-          OCI_REGION: ${{ secrets.OCI_REGION }}
-          OCI_FINGERPRINT: ${{ secrets.OCI_FINGERPRINT }}
-          OCI_API_KEY: ${{ secrets.OCI_API_KEY }}
-          OCI_SUBNET_ID: ${{ secrets.OCI_SUBNET_ID }}
-          OCI_AVAILABILITY_DOMAIN: ${{ secrets.OCI_AVAILABILITY_DOMAIN }}
-          OCI_IMAGE_ID: ${{ secrets.OCI_IMAGE_ID }}
-          OCI_COMPUTE_SHAPE: ${{ secrets.OCI_COMPUTE_SHAPE }}
         run: python main.py
+
